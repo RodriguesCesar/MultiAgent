@@ -42,6 +42,23 @@ OpenAI__Model=gpt-4o
 dotnet run --project MultiAgent.API/MultiAgent.API.csproj
 ```
 
+## Testes
+
+```bash
+dotnet test MultiAgent.slnx
+```
+
+Projeto de testes:
+
+- `MultiAgent.API.Tests`
+
+Coberturas iniciais:
+
+- validações de entrada (`AgentRequest`)
+- validação de configuração (`KernelFactory`)
+- validação de argumento no serviço orquestrador (`AgentService`)
+- health check (`GET /health`)
+
 ## Endpoint
 
 - `POST /api/agent`
@@ -54,3 +71,11 @@ Exemplo de payload:
   "message": "Crie um plano para uma API de cadastro de produtos."
 }
 ```
+
+## CI
+
+Workflow em `.github/workflows/ci.yml` executa:
+
+1. restore
+2. build (Release)
+3. test

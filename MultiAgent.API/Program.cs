@@ -58,3 +58,5 @@ app.MapHealthChecks("/health");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+public partial class Program;

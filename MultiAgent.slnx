@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="MultiAgent.API/MultiAgent.API.csproj" />
+  <Project Path="MultiAgent.API.Tests/MultiAgent.API.Tests.csproj" />
 </Solution>
