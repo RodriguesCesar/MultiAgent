@@ -5,7 +5,7 @@ namespace MultiAgent.API.Agents;
 
 public class CodeAgent(Kernel kernel)
 {
-    public async Task<string> GenerateCode(AgentContextModel context)
+    public async Task<string> GenerateCode(AgentContextModel context, CancellationToken cancellationToken = default)
     {
         var prompt = """
                 Plano:
@@ -23,7 +23,8 @@ public class CodeAgent(Kernel kernel)
             {
                 ["plan"] = context.Plan,
                 ["research"] = context.Research
-            });
+            },
+            cancellationToken: cancellationToken);
 
         return result.ToString();
     }

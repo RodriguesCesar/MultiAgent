@@ -4,7 +4,7 @@ namespace MultiAgent.API.Agents
 {
     public class ResearchAgent(Kernel kernel)
     {
-        public async Task<string> Research(Models.AgentContextModel context)
+        public async Task<string> Research(Models.AgentContextModel context, CancellationToken cancellationToken = default)
         {
             var prompt = """
                     Você é um agente de pesquisa.
@@ -22,7 +22,8 @@ namespace MultiAgent.API.Agents
                 new()
                 {
                     ["plan"] = context.Plan
-                });
+                },
+                cancellationToken: cancellationToken);
 
             return result.ToString();
         }

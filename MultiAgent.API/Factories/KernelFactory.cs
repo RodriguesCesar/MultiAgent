@@ -4,17 +4,20 @@ namespace MultiAgent.API.Factories;
 
 public class KernelFactory
 {
-
-    public static Kernel CreateKernel()
+    public static Kernel CreateKernel(IConfiguration configuration)
     {
         var builder = Kernel.CreateBuilder();
+        var modelId = configuration["OpenAI:Model"] ?? "gpt-4o";
+        var apiKey = configuration["OpenAI:ApiKey"];
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("OpenAI:ApiKey não configurada. Defina por variável de ambiente ou appsettings.Local.json.");
 
         builder.AddOpenAIChatCompletion(
-                modelId: "gpt-4o",
-                apiKey: "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"
+                modelId: modelId,
+                apiKey: apiKey
             );
 
         return builder.Build();
-
     }
 }

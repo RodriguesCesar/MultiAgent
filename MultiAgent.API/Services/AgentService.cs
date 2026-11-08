@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewEngines;
 using MultiAgent.API.Agents;
 using MultiAgent.API.Models;
-using System.Numerics;
 
 namespace MultiAgent.API.Services;
 
@@ -23,25 +21,21 @@ public class AgentService
         _reviewAgent = reviewAgent;
     }
 
-    public async Task<AgentContextModel> Execute(string message)
+    public async Task<AgentContextModel> Execute(string message, CancellationToken cancellationToken = default)
     {
-        //Capturando a mensagem
+        if (string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("A mensagem é obrigatória.", nameof(message));
+
         var model = new AgentContextModel { UserRequest = message };
 
-        //Gerando o plano de ação
-        model.Plan = await _plannerAgent.CreatePlan(model);
+        model.Plan = await _plannerAgent.CreatePlan(model, cancellationToken);
 
-        //Gerando a pesquisa
-        model.Research = await _researchAgent.Research(model);
+        model.Research = await _researchAgent.Research(model, cancellationToken);
 
-        //Gerando o código
-        model.Code = await _codeAgent.GenerateCode(model);
+        model.Code = await _codeAgent.GenerateCode(model, cancellationToken);
 
-        //Revisar o código
-        model.Review = await _reviewAgent.Review(model);
+        model.Review = await _reviewAgent.Review(model, cancellationToken);
 
-        //Retornar o resultado
         return model;
     }
-
 }

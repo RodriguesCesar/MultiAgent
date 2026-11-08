@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using MultiAgent.API.Services;
 
@@ -9,14 +9,22 @@ namespace MultiAgent.API.Controllers;
 public class AgentController(AgentService agentService) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] AgentRequest request)
+    [ProducesResponseType(typeof(MultiAgent.API.Models.AgentContextModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Post([FromBody] AgentRequest request, CancellationToken cancellationToken)
     {
-        var response = await agentService.Execute(request.message);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var response = await agentService.Execute(request.Message, cancellationToken);
         return Ok(response);
     }
 }
 
-/* Modelo de dados para a requisição */
 public record AgentRequest(
-        string message
+    [Required(AllowEmptyStrings = false)]
+    [MinLength(5)]
+    [MaxLength(4000)]
+    string Message
     );

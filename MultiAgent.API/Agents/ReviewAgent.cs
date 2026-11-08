@@ -5,7 +5,7 @@ namespace MultiAgent.API.Agents;
 
 public class ReviewAgent(Kernel kernel)
 {
-    public async Task<string> Review(AgentContextModel context)
+    public async Task<string> Review(AgentContextModel context, CancellationToken cancellationToken = default)
     {
         var prompt = """
             Plano:
@@ -25,7 +25,8 @@ public class ReviewAgent(Kernel kernel)
             {
                 ["plan"] = context.Plan,
                 ["code"] = context.Code
-            });
+            },
+            cancellationToken: cancellationToken);
 
         return result.ToString();
     }

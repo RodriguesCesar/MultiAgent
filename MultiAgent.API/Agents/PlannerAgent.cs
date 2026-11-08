@@ -5,7 +5,7 @@ namespace MultiAgent.API.Agents
 {
     public class PlannerAgent(Kernel kernel)
     {
-        public async Task<string> CreatePlan(AgentContextModel context)
+        public async Task<string> CreatePlan(AgentContextModel context, CancellationToken cancellationToken = default)
         {
             var prompt = """
                 Você é um arquiteto de software.
@@ -23,7 +23,8 @@ namespace MultiAgent.API.Agents
                 new()
                 {
                     ["request"] = context.UserRequest
-                });
+                },
+                cancellationToken: cancellationToken);
 
             return result.ToString();
         }
