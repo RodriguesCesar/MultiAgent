@@ -150,12 +150,13 @@ Arquivos prontos em [observability/](/C:/CesarCurso/MultiAgent-work/observabilit
 - [docker-compose.yml](/C:/CesarCurso/MultiAgent-work/observability/docker-compose.yml)
 - [prometheus.yml](/C:/CesarCurso/MultiAgent-work/observability/prometheus/prometheus.yml)
 - [alerts.yml](/C:/CesarCurso/MultiAgent-work/observability/prometheus/alerts.yml)
+- [alertmanager.yml](/C:/CesarCurso/MultiAgent-work/observability/alertmanager/alertmanager.yml)
 - [multiagent-security.json](/C:/CesarCurso/MultiAgent-work/observability/grafana/dashboards/multiagent-security.json)
 
 Passos:
 
 1. Execute a API localmente (`dotnet run`) na porta `5132`.
-2. Suba Prometheus e Grafana:
+2. Suba Prometheus, Alertmanager e Grafana:
 
 ```bash
 docker compose -f observability/docker-compose.yml up -d
@@ -163,6 +164,7 @@ docker compose -f observability/docker-compose.yml up -d
 
 3. Acesse:
    - Prometheus: `http://localhost:9090`
+   - Alertmanager: `http://localhost:9093`
    - Grafana: `http://localhost:3000` (`admin` / `admin`)
 
 4. O dashboard **MultiAgent Security Observability** será provisionado automaticamente.
@@ -171,6 +173,18 @@ docker compose -f observability/docker-compose.yml up -d
    - `MultiAgentHighAuthFailureRate`
    - `MultiAgentHighRateLimitRejections`
    - `MultiAgentAuthConfigError`
+
+6. Alertas disparados podem ser vistos em Alertmanager > **Alerts**.
+
+#### Teste rápido de alerta
+
+Para disparar rapidamente um alerta de falha de autenticação:
+
+1. Faça várias chamadas para `POST /api/agent` sem `X-Agent-Api-Key`.
+2. Aguarde alguns minutos (janela de avaliação do Prometheus).
+3. Verifique o alerta `MultiAgentHighAuthFailureRate` em:
+   - Prometheus: `http://localhost:9090/alerts`
+   - Alertmanager: `http://localhost:9093`
 
 Para encerrar:
 
