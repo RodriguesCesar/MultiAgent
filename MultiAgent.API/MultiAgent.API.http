@@ -1,8 +1,10 @@
 @MultiAgent.API_HostAddress = http://localhost:5132
+@AgentApiKey = configure-aqui
 
 POST {{MultiAgent.API_HostAddress}}/api/agent
 Accept: application/json
 Content-Type: application/json
+X-Agent-Api-Key: {{AgentApiKey}}
 
 {
   "message": "Crie um plano para uma API de cadastro de produtos com .NET e SQL Server."

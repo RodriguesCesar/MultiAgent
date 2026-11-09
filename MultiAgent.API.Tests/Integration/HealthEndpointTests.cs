@@ -28,7 +28,8 @@ public class HealthEndpointTests
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["OpenAI:Model"] = "gpt-4o",
-                    ["OpenAI:ApiKey"] = "test-key"
+                    ["OpenAI:ApiKey"] = "test-key",
+                    ["Authentication:AllowAnonymousInDevelopment"] = "true"
                 });
             });
         }

@@ -25,6 +25,10 @@ cp MultiAgent.API/appsettings.Local.example.json MultiAgent.API/appsettings.Loca
   "OpenAI": {
     "Model": "gpt-4o",
     "ApiKey": "sua-chave-aqui"
+  },
+  "Authentication": {
+    "AgentApiKey": "sua-api-key-interna",
+    "AllowAnonymousInDevelopment": false
   }
 }
 ```
@@ -34,6 +38,8 @@ Alternativa por variável de ambiente:
 ```bash
 OpenAI__ApiKey=sua-chave-aqui
 OpenAI__Model=gpt-4o
+Authentication__AgentApiKey=sua-api-key-interna
+Authentication__AllowAnonymousInDevelopment=false
 ```
 
 ## Executar
@@ -59,11 +65,19 @@ Coberturas iniciais:
 - validação de argumento no serviço orquestrador (`AgentService`)
 - health check (`GET /health`)
 - rate limiting (`POST /api/agent` com resposta `429`)
+- autenticação (`POST /api/agent` com resposta `401` sem/erro de API key)
 
 ## Endpoint
 
 - `POST /api/agent`
 - `GET /health`
+
+### Autenticação do endpoint de agente
+
+`POST /api/agent` exige o header `X-Agent-Api-Key` com o valor configurado em `Authentication:AgentApiKey`.
+
+- Em ambientes **não Development**, a chave é obrigatória.
+- Em **Development**, é possível permitir bypass configurando `Authentication:AllowAnonymousInDevelopment=true` (apenas para desenvolvimento local).
 
 ### Rate limiting
 
