@@ -1,0 +1,32 @@
+groups:
+  - name: multiagent-security-alerts
+    rules:
+      - alert: MultiAgentHighAuthFailureRate
+        expr: sum(rate(agent_auth_failures_total[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: multiagent-api
+        annotations:
+          summary: "Taxa alta de falhas de autenticação"
+          description: "A taxa de falhas de autenticação está acima de 0.2 req/s por 5 minutos."
+
+      - alert: MultiAgentHighRateLimitRejections
+        expr: sum(rate(agent_rate_limit_rejections_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: multiagent-api
+        annotations:
+          summary: "Taxa alta de rejeições por rate limit"
+          description: "Rejeições por rate limiting acima de 0.1 req/s por 5 minutos."
+
+      - alert: MultiAgentAuthConfigError
+        expr: increase(agent_auth_config_errors_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: multiagent-api
+        annotations:
+          summary: "Erro de configuração de autenticação detectado"
+          description: "O endpoint de agente recebeu requisição sem chaves de autenticação configuradas."

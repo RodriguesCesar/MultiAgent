@@ -149,6 +149,7 @@ Arquivos prontos em [observability/](/C:/CesarCurso/MultiAgent-work/observabilit
 
 - [docker-compose.yml](/C:/CesarCurso/MultiAgent-work/observability/docker-compose.yml)
 - [prometheus.yml](/C:/CesarCurso/MultiAgent-work/observability/prometheus/prometheus.yml)
+- [alerts.yml](/C:/CesarCurso/MultiAgent-work/observability/prometheus/alerts.yml)
 - [multiagent-security.json](/C:/CesarCurso/MultiAgent-work/observability/grafana/dashboards/multiagent-security.json)
 
 Passos:
@@ -165,6 +166,11 @@ docker compose -f observability/docker-compose.yml up -d
    - Grafana: `http://localhost:3000` (`admin` / `admin`)
 
 4. O dashboard **MultiAgent Security Observability** será provisionado automaticamente.
+
+5. Alertas de segurança ficam disponíveis em Prometheus > **Alerts**:
+   - `MultiAgentHighAuthFailureRate`
+   - `MultiAgentHighRateLimitRejections`
+   - `MultiAgentAuthConfigError`
 
 Para encerrar:
 
