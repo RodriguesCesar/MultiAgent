@@ -4,6 +4,7 @@ using MultiAgent.API.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using OpenTelemetry.Metrics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -29,6 +30,14 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 builder.Services.AddHealthChecks();
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddMeter(SecurityTelemetry.MeterName)
+            .AddAspNetCoreInstrumentation()
+            .AddPrometheusExporter();
+    });
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -107,6 +116,7 @@ app.UseExceptionHandler(exceptionHandlerApp =>
 });
 
 app.MapHealthChecks("/health");
+app.MapPrometheusScrapingEndpoint("/metrics");
 app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
@@ -243,7 +253,8 @@ public partial class Program;
 
 static class SecurityTelemetry
 {
-    private static readonly Meter Meter = new("MultiAgent.API.Security", "1.0.0");
+    public const string MeterName = "MultiAgent.API.Security";
+    private static readonly Meter Meter = new(MeterName, "1.0.0");
 
     public static readonly Counter<long> AuthFailures = Meter.CreateCounter<long>(
         "agent_auth_failures_total",

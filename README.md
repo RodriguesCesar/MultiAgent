@@ -119,6 +119,30 @@ Também publica métricas via `System.Diagnostics.Metrics`:
 - `agent_auth_config_errors_total`
 - `agent_rate_limit_rejections_total`
 
+As métricas são expostas no endpoint:
+
+- `GET /metrics` (formato Prometheus)
+
+> Observação: o exporter Prometheus do OpenTelemetry para ASP.NET Core ainda é distribuído como pacote `beta` no ecossistema OpenTelemetry .NET atual.
+
+#### Integração com Prometheus e Grafana
+
+Exemplo de scrape no `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: "multiagent-api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:5132"]
+```
+
+No Grafana, crie painéis com consultas como:
+
+- `sum(rate(agent_auth_failures_total[5m]))`
+- `sum(rate(agent_rate_limit_rejections_total[5m]))`
+- `sum(rate(agent_auth_success_total[5m]))`
+
 Exemplo de payload:
 
 ```json
@@ -156,3 +180,4 @@ Workflow em `.github/workflows/ci.yml` executa:
 - suíte inicial de testes unitários e de integração
 - CI no GitHub Actions (restore + build + test)
 - atualização de dependências críticas e correção de vulnerabilidades conhecidas
+- endpoint de métricas para monitoramento contínuo em Prometheus/Grafana
