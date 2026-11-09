@@ -143,6 +143,35 @@ No Grafana, crie painéis com consultas como:
 - `sum(rate(agent_rate_limit_rejections_total[5m]))`
 - `sum(rate(agent_auth_success_total[5m]))`
 
+### Stack local de observabilidade (Docker Compose)
+
+Arquivos prontos em [observability/](/C:/CesarCurso/MultiAgent-work/observability/):
+
+- [docker-compose.yml](/C:/CesarCurso/MultiAgent-work/observability/docker-compose.yml)
+- [prometheus.yml](/C:/CesarCurso/MultiAgent-work/observability/prometheus/prometheus.yml)
+- [multiagent-security.json](/C:/CesarCurso/MultiAgent-work/observability/grafana/dashboards/multiagent-security.json)
+
+Passos:
+
+1. Execute a API localmente (`dotnet run`) na porta `5132`.
+2. Suba Prometheus e Grafana:
+
+```bash
+docker compose -f observability/docker-compose.yml up -d
+```
+
+3. Acesse:
+   - Prometheus: `http://localhost:9090`
+   - Grafana: `http://localhost:3000` (`admin` / `admin`)
+
+4. O dashboard **MultiAgent Security Observability** será provisionado automaticamente.
+
+Para encerrar:
+
+```bash
+docker compose -f observability/docker-compose.yml down
+```
+
 Exemplo de payload:
 
 ```json
