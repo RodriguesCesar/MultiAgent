@@ -58,11 +58,22 @@ Coberturas iniciais:
 - validação de configuração (`KernelFactory`)
 - validação de argumento no serviço orquestrador (`AgentService`)
 - health check (`GET /health`)
+- rate limiting (`POST /api/agent` com resposta `429`)
 
 ## Endpoint
 
 - `POST /api/agent`
 - `GET /health`
+
+### Rate limiting
+
+O endpoint `POST /api/agent` possui limitação de taxa configurável para reduzir abuso:
+
+- `RateLimiting:Agent:PermitLimit` (padrão: `20`)
+- `RateLimiting:Agent:WindowSeconds` (padrão: `60`)
+- `RateLimiting:Agent:QueueLimit` (padrão: `0`)
+
+Ao exceder o limite, a API retorna `429 Too Many Requests` com `ProblemDetails` e `traceId`.
 
 Exemplo de payload:
 
