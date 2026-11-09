@@ -104,6 +104,21 @@ O endpoint `POST /api/agent` possui limitação de taxa configurável para reduz
 
 Ao exceder o limite, a API retorna `429 Too Many Requests` com `ProblemDetails` e `traceId`.
 
+### Observabilidade de segurança
+
+A API registra eventos de segurança com logs estruturados (incluindo `traceId`) para:
+
+- tentativas com API key inválida
+- bloqueios por rate limiting
+- erro de configuração de autenticação
+
+Também publica métricas via `System.Diagnostics.Metrics`:
+
+- `agent_auth_success_total`
+- `agent_auth_failures_total`
+- `agent_auth_config_errors_total`
+- `agent_rate_limit_rejections_total`
+
 Exemplo de payload:
 
 ```json
@@ -128,6 +143,7 @@ Workflow em `.github/workflows/ci.yml` executa:
 - autenticação de `POST /api/agent` por API key
 - suporte a rotação de API key com múltiplas chaves válidas
 - respostas de erro seguras com `ProblemDetails` e `traceId`
+- logs e métricas para eventos críticos de autenticação/rate limiting
 
 ### Confiabilidade e operação
 

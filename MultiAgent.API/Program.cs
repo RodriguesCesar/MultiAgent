@@ -4,6 +4,7 @@ using MultiAgent.API.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,6 +34,16 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, cancellationToken) =>
     {
+        SecurityTelemetry.RateLimitRejections.Add(1);
+        var logger = context.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("MultiAgent.API.Security");
+        logger.LogWarning(
+            "Rate limit exceeded for path {Path}. TraceId={TraceId} RemoteIp={RemoteIp}",
+            context.HttpContext.Request.Path,
+            context.HttpContext.TraceIdentifier,
+            context.HttpContext.Connection.RemoteIpAddress?.ToString());
+
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
         {
             context.HttpContext.Response.Headers.RetryAfter =
@@ -108,20 +119,32 @@ app.Use(async (context, next) =>
     var allowAnonymousInDevelopment = app.Configuration.GetValue("Authentication:AllowAnonymousInDevelopment", true);
     var configuredAgentApiKeys = ReadConfiguredAgentApiKeys(app.Configuration);
     var bypassAuthentication = app.Environment.IsDevelopment() && allowAnonymousInDevelopment;
+    var logger = context.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("MultiAgent.API.Security");
 
     if (configuredAgentApiKeys.Count == 0)
     {
         if (bypassAuthentication)
         {
+            logger.LogWarning(
+                "Authentication bypass enabled in Development due to AllowAnonymousInDevelopment and no configured API key. TraceId={TraceId}",
+                context.TraceIdentifier);
             await next();
             return;
         }
+
+        SecurityTelemetry.AuthConfigErrors.Add(1);
+        logger.LogError(
+            "Agent authentication is misconfigured: no API keys configured. Path={Path} TraceId={TraceId}",
+            context.Request.Path,
+            context.TraceIdentifier);
 
         var configurationProblem = new ProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
             Title = "Configuração inválida",
-            Detail = "Defina Authentication:AgentApiKey para proteger o endpoint /api/agent."
+            Detail = "Defina Authentication:AgentApiKeys (ou Authentication:AgentApiKey) para proteger o endpoint /api/agent."
         };
 
         configurationProblem.Extensions["traceId"] = context.TraceIdentifier;
@@ -133,6 +156,13 @@ app.Use(async (context, next) =>
     var providedApiKey = context.Request.Headers[AgentApiKeyHeaderName].ToString();
     if (!IsValidApiKey(configuredAgentApiKeys, providedApiKey))
     {
+        SecurityTelemetry.AuthFailures.Add(1);
+        logger.LogWarning(
+            "Invalid API key for agent endpoint. Path={Path} TraceId={TraceId} RemoteIp={RemoteIp}",
+            context.Request.Path,
+            context.TraceIdentifier,
+            context.Connection.RemoteIpAddress?.ToString());
+
         var problem = new ProblemDetails
         {
             Status = StatusCodes.Status401Unauthorized,
@@ -146,6 +176,7 @@ app.Use(async (context, next) =>
         return;
     }
 
+    SecurityTelemetry.AuthSuccess.Add(1);
     await next();
 });
 app.UseAuthorization();
@@ -209,3 +240,28 @@ static bool IsValidApiKey(IReadOnlyList<string> expectedApiKeys, string provided
 }
 
 public partial class Program;
+
+static class SecurityTelemetry
+{
+    private static readonly Meter Meter = new("MultiAgent.API.Security", "1.0.0");
+
+    public static readonly Counter<long> AuthFailures = Meter.CreateCounter<long>(
+        "agent_auth_failures_total",
+        unit: "{request}",
+        description: "Total de tentativas de autenticação inválidas no endpoint de agente.");
+
+    public static readonly Counter<long> AuthSuccess = Meter.CreateCounter<long>(
+        "agent_auth_success_total",
+        unit: "{request}",
+        description: "Total de autenticações válidas no endpoint de agente.");
+
+    public static readonly Counter<long> AuthConfigErrors = Meter.CreateCounter<long>(
+        "agent_auth_config_errors_total",
+        unit: "{request}",
+        description: "Total de requisições bloqueadas por configuração inválida de autenticação.");
+
+    public static readonly Counter<long> RateLimitRejections = Meter.CreateCounter<long>(
+        "agent_rate_limit_rejections_total",
+        unit: "{request}",
+        description: "Total de requisições rejeitadas por rate limiting no endpoint de agente.");
+}

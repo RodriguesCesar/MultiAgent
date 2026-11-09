@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -56,6 +57,20 @@ public class AgentAuthenticationTests
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task AgentEndpoint_ShouldReturnServerError_WhenNoApiKeyIsConfiguredOutsideDevelopment()
+    {
+        await using var factory = new MissingApiKeyTestApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/agent", new { message = "1234" });
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.NotNull(problem);
+        Assert.Equal("Configuração inválida", problem.Title);
+    }
+
     private sealed class AuthenticationTestApiFactory : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -69,6 +84,23 @@ public class AgentAuthenticationTests
                     ["OpenAI:ApiKey"] = "test-key",
                     ["Authentication:AgentApiKeys:0"] = "active-api-key",
                     ["Authentication:AgentApiKeys:1"] = "transition-api-key",
+                    ["Authentication:AllowAnonymousInDevelopment"] = "false"
+                });
+            });
+        }
+    }
+
+    private sealed class MissingApiKeyTestApiFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Production");
+            builder.ConfigureAppConfiguration((_, configBuilder) =>
+            {
+                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["OpenAI:Model"] = "gpt-4o",
+                    ["OpenAI:ApiKey"] = "test-key",
                     ["Authentication:AllowAnonymousInDevelopment"] = "false"
                 });
             });
