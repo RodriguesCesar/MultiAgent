@@ -37,7 +37,19 @@ public class AgentAuthenticationTests
     {
         await using var factory = new AuthenticationTestApiFactory();
         using var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Agent-Api-Key", "integration-test-key");
+        client.DefaultRequestHeaders.Add("X-Agent-Api-Key", "active-api-key");
+
+        var response = await client.PostAsJsonAsync("/api/agent", new { message = "1234" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentEndpoint_ShouldAllowRequest_WhenTransitionApiKeyIsUsed()
+    {
+        await using var factory = new AuthenticationTestApiFactory();
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Agent-Api-Key", "transition-api-key");
 
         var response = await client.PostAsJsonAsync("/api/agent", new { message = "1234" });
 
@@ -55,7 +67,8 @@ public class AgentAuthenticationTests
                 {
                     ["OpenAI:Model"] = "gpt-4o",
                     ["OpenAI:ApiKey"] = "test-key",
-                    ["Authentication:AgentApiKey"] = "integration-test-key",
+                    ["Authentication:AgentApiKeys:0"] = "active-api-key",
+                    ["Authentication:AgentApiKeys:1"] = "transition-api-key",
                     ["Authentication:AllowAnonymousInDevelopment"] = "false"
                 });
             });

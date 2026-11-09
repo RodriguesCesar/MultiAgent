@@ -27,7 +27,11 @@ cp MultiAgent.API/appsettings.Local.example.json MultiAgent.API/appsettings.Loca
     "ApiKey": "sua-chave-aqui"
   },
   "Authentication": {
-    "AgentApiKey": "sua-api-key-interna",
+    "AgentApiKey": "",
+    "AgentApiKeys": [
+      "sua-api-key-ativa",
+      "sua-api-key-em-rotacao"
+    ],
     "AllowAnonymousInDevelopment": false
   }
 }
@@ -38,7 +42,8 @@ Alternativa por variável de ambiente:
 ```bash
 OpenAI__ApiKey=sua-chave-aqui
 OpenAI__Model=gpt-4o
-Authentication__AgentApiKey=sua-api-key-interna
+Authentication__AgentApiKeys__0=sua-api-key-ativa
+Authentication__AgentApiKeys__1=sua-api-key-em-rotacao
 Authentication__AllowAnonymousInDevelopment=false
 ```
 
@@ -66,6 +71,7 @@ Coberturas iniciais:
 - health check (`GET /health`)
 - rate limiting (`POST /api/agent` com resposta `429`)
 - autenticação (`POST /api/agent` com resposta `401` sem/erro de API key)
+- rotação de API key (chave ativa + chave de transição)
 
 ## Endpoint
 
@@ -74,10 +80,19 @@ Coberturas iniciais:
 
 ### Autenticação do endpoint de agente
 
-`POST /api/agent` exige o header `X-Agent-Api-Key` com o valor configurado em `Authentication:AgentApiKey`.
+`POST /api/agent` exige o header `X-Agent-Api-Key` com uma chave válida configurada em:
+
+- `Authentication:AgentApiKeys` (recomendado, lista de chaves para rotação sem downtime)
+- `Authentication:AgentApiKey` (compatibilidade com chave única)
 
 - Em ambientes **não Development**, a chave é obrigatória.
 - Em **Development**, é possível permitir bypass configurando `Authentication:AllowAnonymousInDevelopment=true` (apenas para desenvolvimento local).
+
+#### Rotação sem downtime (recomendado)
+
+1. Adicione nova chave em `Authentication:AgentApiKeys`, mantendo a antiga.
+2. Atualize os clientes para usar a nova chave.
+3. Remova a chave antiga da lista após migração completa.
 
 ### Rate limiting
 
@@ -104,3 +119,24 @@ Workflow em `.github/workflows/ci.yml` executa:
 1. restore
 2. build (Release)
 3. test
+
+## Melhorias realizadas no projeto
+
+### Segurança
+
+- remoção de segredo OpenAI hardcoded (agora via configuração/ambiente)
+- autenticação de `POST /api/agent` por API key
+- suporte a rotação de API key com múltiplas chaves válidas
+- respostas de erro seguras com `ProblemDetails` e `traceId`
+
+### Confiabilidade e operação
+
+- health check em `GET /health`
+- rate limiting configurável para mitigar abuso
+- propagação de `CancellationToken` no fluxo de execução
+
+### Qualidade e entrega
+
+- suíte inicial de testes unitários e de integração
+- CI no GitHub Actions (restore + build + test)
+- atualização de dependências críticas e correção de vulnerabilidades conhecidas

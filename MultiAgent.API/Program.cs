@@ -106,10 +106,10 @@ app.Use(async (context, next) =>
     }
 
     var allowAnonymousInDevelopment = app.Configuration.GetValue("Authentication:AllowAnonymousInDevelopment", true);
-    var configuredAgentApiKey = app.Configuration["Authentication:AgentApiKey"];
+    var configuredAgentApiKeys = ReadConfiguredAgentApiKeys(app.Configuration);
     var bypassAuthentication = app.Environment.IsDevelopment() && allowAnonymousInDevelopment;
 
-    if (string.IsNullOrWhiteSpace(configuredAgentApiKey))
+    if (configuredAgentApiKeys.Count == 0)
     {
         if (bypassAuthentication)
         {
@@ -131,7 +131,7 @@ app.Use(async (context, next) =>
     }
 
     var providedApiKey = context.Request.Headers[AgentApiKeyHeaderName].ToString();
-    if (!IsValidApiKey(configuredAgentApiKey, providedApiKey))
+    if (!IsValidApiKey(configuredAgentApiKeys, providedApiKey))
     {
         var problem = new ProblemDetails
         {
@@ -174,15 +174,38 @@ static int ReadNonNegativeInt(IConfiguration configuration, string key)
     return value;
 }
 
-static bool IsValidApiKey(string? expectedApiKey, string providedApiKey)
+static IReadOnlyList<string> ReadConfiguredAgentApiKeys(IConfiguration configuration)
 {
-    if (string.IsNullOrWhiteSpace(expectedApiKey) || string.IsNullOrEmpty(providedApiKey))
+    var configuredKeys = configuration.GetSection("Authentication:AgentApiKeys").Get<string[]>() ?? [];
+    var keys = new List<string>();
+
+    foreach (var key in configuredKeys)
+    {
+        if (!string.IsNullOrWhiteSpace(key))
+            keys.Add(key.Trim());
+    }
+
+    var fallbackSingleKey = configuration["Authentication:AgentApiKey"];
+    if (!string.IsNullOrWhiteSpace(fallbackSingleKey))
+        keys.Add(fallbackSingleKey.Trim());
+
+    return keys.Distinct(StringComparer.Ordinal).ToArray();
+}
+
+static bool IsValidApiKey(IReadOnlyList<string> expectedApiKeys, string providedApiKey)
+{
+    if (expectedApiKeys.Count == 0 || string.IsNullOrEmpty(providedApiKey))
         return false;
 
-    var expected = Encoding.UTF8.GetBytes(expectedApiKey);
     var provided = Encoding.UTF8.GetBytes(providedApiKey);
+    foreach (var expectedApiKey in expectedApiKeys)
+    {
+        var expected = Encoding.UTF8.GetBytes(expectedApiKey);
+        if (expected.Length == provided.Length && CryptographicOperations.FixedTimeEquals(expected, provided))
+            return true;
+    }
 
-    return expected.Length == provided.Length && CryptographicOperations.FixedTimeEquals(expected, provided);
+    return false;
 }
 
 public partial class Program;
